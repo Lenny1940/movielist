@@ -1,6 +1,10 @@
 const addBtn = document.getElementById('addEntry');
 const watchList = document.getElementById('watchList');
 
+// Lade Einträge aus localStorage
+let entries = JSON.parse(localStorage.getItem('watchEntries')) || [];
+entries.forEach(entry => addListItem(entry));
+
 addBtn.addEventListener('click', () => {
   const title = document.getElementById('title').value.trim();
   const season = document.getElementById('season').value.trim();
@@ -9,14 +13,10 @@ addBtn.addEventListener('click', () => {
 
   if (!title) return;
 
-  const li = document.createElement('li');
-  li.innerHTML = `<span>${title} - S${season}E${episode} (${minute}min)</span> 
-                  <button class="delete">❌</button>`;
-
-  watchList.appendChild(li);
-
-  // Löschen Button
-  li.querySelector('.delete').addEventListener('click', () => li.remove());
+  const entry = { title, season, episode, minute };
+  entries.push(entry);
+  localStorage.setItem('watchEntries', JSON.stringify(entries));
+  addListItem(entry);
 
   // Felder zurücksetzen
   document.getElementById('title').value = '';
@@ -24,3 +24,17 @@ addBtn.addEventListener('click', () => {
   document.getElementById('episode').value = '';
   document.getElementById('minute').value = '';
 });
+
+function addListItem(entry) {
+  const li = document.createElement('li');
+  li.innerHTML = `<span>${entry.title} - S${entry.season}E${entry.episode} (${entry.minute}min)</span> 
+                  <button class="delete">❌</button>`;
+  watchList.appendChild(li);
+
+  // Löschen Button
+  li.querySelector('.delete').addEventListener('click', () => {
+    watchList.removeChild(li);
+    entries = entries.filter(e => e !== entry);
+    localStorage.setItem('watchEntries', JSON.stringify(entries));
+  });
+}
