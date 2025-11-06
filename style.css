@@ -104,8 +104,16 @@ header p {
   cursor: pointer;
   color: white;
   font-weight: bold;
+  transition: 0.2s;
 }
 
 #watchList li button:hover {
   background: #00ffff;
+}
+
+footer {
+  text-align: center;
+  padding: 1rem;
+  background: #111;
+  border-top: 2px solid var(--accent2);
 }
