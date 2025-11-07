@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WatchTracker 5.0</title>
+<style>
+:root {
+  --accent: #00ffff;
+  --accent2: #0077ff;
+  --bg: radial-gradient(circle at top, #050510, #000);
+  --glass: rgba(255,255,255,0.05);
+  --text: #fff;
+  --muted: #aaa;
+}
+
+body.light {
+  --accent: #0077ff;
+  --accent2: #00aaff;
+  --bg: radial-gradient(circle at top, #f0f8ff, #e0e0ff);
+  --glass: rgba(255,255,255,0.6);
+  --text: #000;
+  --muted: #333;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  transition: background 0.5s ease, color 0.5s ease;
+}
+
+h1 {
+  margin-top: 30px;
+  font-size: 2.2rem;
+  color: var(--accent);
+  text-shadow: 0 0 15px var(--accent);
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+.tracker {
+  backdrop-filter: blur(12px);
+  background: var(--glass);
+  border-radius: 20px;
+  padding: 25px;
+  width: 90%;
+  max-width: 900px;
+  margin: 20px auto;
+  box-shadow: 0 0 30px rgba(0,255,255,0.1);
+}
+
+.top-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+input, select, button {
+  font-family: inherit;
+  border: none;
+  outline: none;
+}
+
+input, select {
+  background: rgba(255,255,255,0.1);
+  color: var(--text);
+  padding: 10px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+input:focus, select:focus {
+  background: rgba(255,255,255,0.2);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+button {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  color: #000;
+  font-weight: bold;
+  border-radius: 12px;
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px var(--accent);
+}
+
+.inputs {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+@media (max-width: 700px) {
+  .inputs {
+    grid-template-columns: 1fr 1fr;
+  }
+  .inputs button {
+    grid-column: span 2;
+  }
+}
+
+.item {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.info { flex: 1; }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.actions button {
+  margin-left: 5px;
+  font-size: 0.9em;
+}
+
+.no-items {
+  text-align: center;
+  color: var(--muted);
+  margin-top: 10px;
+}
+
+.theme-toggle {
+  border-radius: 50%;
+  padding: 10px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  color: #000;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+.theme-toggle:hover { transform: rotate(180deg); }
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  top:0; left:0; right:0; bottom:0;
+  background: rgba(0,0,0,0.7);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--glass);
+  padding: 20px;
+  border-radius: 20px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  backdrop-filter: blur(12px);
+}
+.modal-content button {
+  margin-top: 10px;
+}
+footer {
+  margin: 20px 0;
+  text-align: center;
+  color: var(--muted);
+}
+</style>
+</head>
+<body>
+<h1>🎥 WatchTracker</h1>
+
+<div class="tracker">
+  <div class="top-bar">
+    <input type="text" id="search" placeholder="🔍 Suche nach Titel...">
+    <select id="sort">
+      <option value="recent">Zuletzt bearbeitet</option>
+      <option value="name">Name (A–Z)</option>
+    </select>
+    <button id="themeToggle" class="theme-toggle">🌓</button>
+  </div>
+
+  <div class="inputs">
+    <input type="text" id="title" placeholder="Titel (Film oder Serie)">
+    <input type="number" id="season" placeholder="Staffel">
+    <input type="number" id="episode" placeholder="Folge">
+    <input type="number" id="minute" placeholder="Minute">
+    <button id="addBtn">＋</button>
+  </div>
+
+  <div class="top-bar">
+    <button id="backupBtn">💾 Backup JSON</button>
+    <button id="restoreBtn">♻️ Restore JSON</button>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <div id="modal-text"></div>
+    <button onclick="closeModal()">Schließen</button>
+  </div>
+</div>
+
+<footer>Created by Lenny</footer>
+
+<script>
+const listEl = document.getElementById("list");
+const addBtn = document.getElementById("addBtn");
+const searchEl = document.getElementById("search");
+const sortEl = document.getElementById("sort");
+const themeToggle = document.getElementById("themeToggle");
+const modal = document.getElementById("modal");
+const modalText = document.getElementById("modal-text");
+
+function loadData() {
+  return JSON.parse(localStorage.getItem("watchTracker") || "[]");
+}
+function saveData(data) {
+  localStorage.setItem("watchTracker", JSON.stringify(data));
+}
+
+function render() {
+  let data = loadData();
+  const term = searchEl.value.toLowerCase();
+  const sort = sortEl.value;
+  let filtered = data.filter(i => i.title.toLowerCase().includes(term));
+  if(sort==="name") filtered.sort((a,b)=>a.title.localeCompare(b.title));
+  else filtered.sort((a,b)=>b.updated - a.updated);
+  listEl.innerHTML="";
+  if(filtered.length===0){
+    listEl.innerHTML=`<div class="no-items">Keine Einträge</div>`;
+    return;
+  }
+  filtered.forEach((item,index)=>{
+    const div=document.createElement("div");
+    div.className="item";
+    const done = item.done ? "✅" : "";
+    const updated = new Date(item.updated).toLocaleString();
+    div.innerHTML=`
+      <div class="info">
+        <strong>${item.title}</strong> ${done}<br>
+        Staffel ${item.season || "-"}, Folge ${item.episode || "-"}, Minute ${item.minute || 0}<br>
+        <small>Letztes Update: ${updated}</small>
+      </div>
+      <div class="actions">
+        <button onclick="plusEpisode(${index})">+1 Folge</button>
+        <button onclick="plusMinute(${index})">+10 Min</button>
+        <button onclick="toggleDone(${index})">✔️ Fertig</button>
+        <button onclick="resetItem(${index})">🔄 Reset</button>
+        <button onclick="editItem(${index})">✏️</button>
+        <button onclick="deleteItem(${index})">🗑️</button>
+        <button onclick="showModal(${index})">ℹ️ Info</button>
+      </div>
+    `;
+    listEl.appendChild(div);
+  });
+}
+
+function addItem(){
+  const title=document.getElementById("title").value.trim();
+  const season=document.getElementById("season").value;
+  const episode=document.getElementById("episode").value;
+  const minute=document.getElementById("minute").value;
+  if(!title) return alert("Titel eingeben!");
+  const data=loadData();
+  data.push({title,season,episode,minute,updated:Date.now(),done:false});
+  saveData(data);
+  clearInputs();
+  render();
+}
+function clearInputs(){
+  ["title","season","episode","minute"].forEach(id=>document.getElementById(id).value="");
+}
+
+function deleteItem(i){
+  const data=loadData();
+  if(!confirm("Wirklich löschen?")) return;
+  data.splice(i,1);
+  saveData(data);
+  render();
+}
+
+function editItem(i){
+  const data=loadData();
+  const item=data[i];
+  const title=prompt("Titel:",item.title);
+  if(title===null) return;
+  const season=prompt("Staffel:",item.season);
+  const episode=prompt("Folge:",item.episode);
+  const minute=prompt("Minute:",item.minute);
+  data[i]={title,season,episode,minute,updated:Date.now(),done:item.done};
+  saveData(data);
+  render();
+}
+
+function plusEpisode(i){ const data=loadData(); data[i].episode=(parseInt(data[i].episode)||0)+1; data[i].updated=Date.now(); saveData(data); render();}
+function plusMinute(i){ const data=loadData(); data[i].minute=(parseInt(data[i].minute)||0)+10; data[i].updated=Date.now(); saveData(data); render();}
+function toggleDone(i){ const data=loadData(); data[i].done=!data[i].done; data[i].updated=Date.now(); saveData(data); render();}
+function resetItem(i){ const data=loadData(); data[i].season=0; data[i].episode=0; data[i].minute=0; data[i].updated=Date.now(); saveData(data); render();}
+
+// Modal
+function showModal(i){ const data=loadData(); const item=data[i]; modalText.innerHTML=`
+  <h3>${item.title}</h3>
+  <p>Staffel: ${item.season || "-"}<br>Folge: ${item.episode || "-"}<br>Minute: ${item.minute || 0}</p>
+  <p>${item.done?"✅ Fertig gesehen":"⏳ Noch nicht fertig"}</p>
+`; modal.style.display="flex";}
+function closeModal(){modal.style.display="none";}
+
+// Backup / Restore
+document.getElementById("backupBtn").onclick = ()=>{
+  const data=JSON.stringify(loadData(),null,2);
+  const blob=new Blob([data],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="watchtracker_backup.json";
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+document.getElementById("restoreBtn").onclick = ()=>{
+  const input=document.createElement("input");
+  input.type="file"; input.accept="application/json";
+  input.onchange=e=>{
+    const file=e.target.files[0];
+    const reader=new FileReader();
+    reader.onload=function(){ 
+      try{
+        const data=JSON.parse(this.result);
+        localStorage.setItem("watchTracker",JSON.stringify(data));
+        render();
+        alert("Liste erfolgreich wiederhergestellt!");
+      }catch(err){alert("Ungültige Datei!");}
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+};
+
+// Theme toggle
+themeToggle.onclick = ()=>{
+  document.body.classList.toggle("light");
+  localStorage.setItem("watchTheme", document.body.classList.contains("light")?"light":"dark");
+};
+if(localStorage.getItem("watchTheme")==="light") document.body.classList.add("light");
+
+addBtn.onclick=addItem;
+searchEl.oninput=render;
+sortEl.onchange=render;
+
+render();
+</script>
+</body>
+</html>
